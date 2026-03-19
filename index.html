@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Louve Invest — Générateur YouTube</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap');
+
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #c8f135;
+    --accent2: #7c6af7;
+    --text: #f0f0f0;
+    --muted: #777;
+    --danger: #ff5f5f;
+    --warning: #f5a623;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,241,53,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,241,53,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 40px 24px 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 40px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    width: 46px; height: 46px;
+    background: var(--accent);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800; color: #0e0e0e;
+    letter-spacing: -1px; flex-shrink: 0;
+  }
+
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  header p { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 3px; }
+
+  /* API bar */
+  .api-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .api-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .api-dot.ok { background: var(--accent); box-shadow: 0 0 6px rgba(200,241,53,0.4); }
+
+  .api-bar label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .api-bar input {
+    flex: 1; min-width: 200px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-bar input:focus { border-color: var(--accent); }
+
+  /* Steps */
+  .steps {
+    display: flex; gap: 6px;
+    margin-bottom: 32px;
+    overflow-x: auto; padding-bottom: 4px;
+  }
+
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    white-space: nowrap; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .step.active { border-color: var(--accent); color: var(--accent); background: rgba(200,241,53,0.06); }
+  .step.done   { border-color: var(--accent2); color: var(--accent2); background: rgba(124,106,247,0.06); }
+
+  .step-n {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: currentColor; color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800; flex-shrink: 0;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 16px;
+    display: none;
+    animation: fadeUp 0.3s ease;
+  }
+  .card.visible { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .card-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent); color: #0e0e0e;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; flex-shrink: 0;
+  }
+
+  .card-title { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+  .card-sub   { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+
+  /* Type grid */
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .type-btn {
+    padding: 16px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .type-btn:hover { border-color: #444; color: var(--text); }
+  .type-btn.selected {
+    border-color: var(--accent);
+    background: rgba(200,241,53,0.08);
+    color: var(--accent); font-weight: 600;
+  }
+  .type-icon { font-size: 22px; display: block; margin-bottom: 6px; }
+
+  /* URL input */
+  .url-input-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .url-input:focus { border-color: var(--accent); }
+  .url-input::placeholder { color: var(--muted); }
+
+  /* Video preview */
+  .video-preview {
+    display: none;
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    aspect-ratio: 16/9;
+    background: #000;
+  }
+  .video-preview iframe {
+    width: 100%; height: 100%;
+    border: none;
+  }
+  .video-preview.visible { display: block; }
+
+  /* Analyzing */
+  .analyzing-wrap {
+    padding: 48px 0;
+    text-align: center;
+  }
+
+  .pulse-icon {
+    font-size: 48px;
+    display: inline-block;
+    margin-bottom: 20px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+  }
+
+  .status-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .progress-bar {
+    width: 100%; max-width: 320px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin: 0 auto;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+
+  /* Analysis block */
+  .analysis-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .analysis-label {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* SEO options */
+  .seo-options { display: flex; flex-direction: column; gap: 10px; }
+
+  .seo-option {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    line-height: 1.6;
+    position: relative;
+  }
+  .seo-option:hover { border-color: #3a3a3a; }
+  .seo-option.selected {
+    border-color: var(--accent);
+    background: rgba(200,241,53,0.05);
+  }
+  .seo-option.selected::after {
+    content: '✓';
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent); font-weight: 800; font-size: 14px;
+  }
+
+  .seo-num {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  /* Chapitres */
+  .chapitres-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .chap-row {
+    display: flex; gap: 10px; align-items: center;
+  }
+
+  .chap-time {
+    width: 72px; flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 10px;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none; text-align: center;
+    transition: border-color 0.2s;
+  }
+  .chap-time:focus { border-color: var(--accent); }
+
+  .chap-name {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .chap-name:focus { border-color: var(--accent); }
+
+  .btn-rm {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--danger);
+    cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s;
+  }
+  .btn-rm:hover { background: rgba(255,95,95,0.1); border-color: var(--danger); }
+
+  .btn-add-chap {
+    margin-top: 10px;
+    padding: 9px 16px;
+    border-radius: 9px;
+    border: 1px dashed var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer; width: 100%;
+    transition: all 0.2s;
+  }
+  .btn-add-chap:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* UTM */
+  .utm-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .utm-input:focus { border-color: var(--accent); }
+
+  .utm-preview-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+
+  .utm-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 13px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+  .utm-lbl { color: var(--accent); width: 80px; flex-shrink: 0; font-weight: 600; }
+  .utm-url { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+  /* Output */
+  .output-card {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 16px;
+    padding: 28px;
+    display: none;
+    animation: fadeUp 0.4s ease;
+    margin-top: 16px;
+  }
+  .output-card.visible { display: block; }
+
+  .output-header {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap; gap: 10px;
+  }
+
+  .output-title {
+    font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .badge {
+    padding: 3px 10px; border-radius: 999px;
+    font-size: 10px; font-family: 'DM Mono', monospace;
+    font-weight: 600; letter-spacing: 0.3px;
+  }
+  .badge-green  { background: rgba(200,241,53,0.12); color: var(--accent);  border: 1px solid rgba(200,241,53,0.2); }
+  .badge-purple { background: rgba(124,106,247,0.12); color: var(--accent2); border: 1px solid rgba(124,106,247,0.2); }
+
+  .output-text {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    line-height: 1.9;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 460px;
+    overflow-y: auto;
+  }
+
+  hr.sep { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+  /* Buttons */
+  .btn-primary {
+    padding: 13px 24px;
+    border-radius: 12px; border: none;
+    background: var(--accent); color: #0e0e0e;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    letter-spacing: -0.3px;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(200,241,53,0.2); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-secondary {
+    padding: 13px 22px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: #444; }
+
+  .btn-copy {
+    padding: 9px 18px; border-radius: 10px;
+    border: 1px solid currentColor; background: transparent;
+    font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--accent);
+  }
+  .btn-copy:hover { background: rgba(200,241,53,0.08); }
+  .btn-copy.purple { color: var(--accent2); }
+  .btn-copy.purple:hover { background: rgba(124,106,247,0.08); }
+
+  .btn-sm {
+    padding: 7px 14px; border-radius: 8px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-family: 'DM Mono', monospace;
+    font-size: 11px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-sm:hover { color: var(--danger); border-color: var(--danger); }
+
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 24px; padding-top: 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap; gap: 10px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    color: var(--muted); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  .hint {
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    color: var(--muted); margin-top: 8px;
+    padding: 9px 13px; background: rgba(255,255,255,0.02);
+    border-radius: 8px; border-left: 2px solid var(--border);
+    line-height: 1.6;
+  }
+  .hint.green  { border-left-color: var(--accent);  color: rgba(200,241,53,0.7); }
+  .hint.orange { border-left-color: var(--warning); color: rgba(245,166,35,0.8); }
+
+  .form-group { margin-bottom: 18px; }
+
+  @media (max-width: 580px) {
+    .type-grid { grid-template-columns: repeat(2, 1fr); }
+    header h1 { font-size: 17px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">LI</div>
+    <div>
+      <h1>Générateur de descriptions YouTube</h1>
+      <p>Louve Invest · Powered by Gemini 1.5 Flash</p>
+    </div>
+    <button class="btn-sm" onclick="resetAll()" style="margin-left:auto">↺ Reset</button>
+  </header>
+
+  <!-- Gemini API Key -->
+  <div class="api-bar">
+    <div class="api-dot" id="api-dot"></div>
+    <label>Clé API Gemini</label>
+    <input type="password" id="gemini-key" placeholder="AIzaSy..." oninput="checkKey()" autocomplete="off">
+    <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted)">Non stockée · Session uniquement</span>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step active" id="s1"><div class="step-n">1</div>Type</div>
+    <div class="step" id="s2"><div class="step-n">2</div>Lien YouTube</div>
+    <div class="step" id="s3"><div class="step-n">3</div>Analyse Gemini</div>
+    <div class="step" id="s4"><div class="step-n">4</div>Validation</div>
+    <div class="step" id="s5"><div class="step-n">5</div>UTMs</div>
+    <div class="step" id="s6"><div class="step-n">6</div>Description</div>
+  </div>
+
+  <!-- ── ÉTAPE 1 : Type ── -->
+  <div class="card visible" id="card-1">
+    <div class="card-header">
+      <div class="card-num">1</div>
+      <div>
+        <div class="card-title">Type de vidéo</div>
+        <div class="card-sub">Définit les liens UTM et le disclaimer à inclure</div>
+      </div>
+    </div>
+
+    <div class="type-grid">
+      <button class="type-btn" onclick="selectType('scpi')"    id="type-scpi">   <span class="type-icon">🏢</span>SCPI</button>
+      <button class="type-btn" onclick="selectType('av')"      id="type-av">     <span class="type-icon">📊</span>Assurance-vie</button>
+      <button class="type-btn" onclick="selectType('etf')"     id="type-etf">    <span class="type-icon">📈</span>ETF</button>
+      <button class="type-btn" onclick="selectType('pea')"     id="type-pea">    <span class="type-icon">💼</span>PEA</button>
+      <button class="type-btn" onclick="selectType('cto')"     id="type-cto">    <span class="type-icon">🏦</span>CTO</button>
+      <button class="type-btn" onclick="selectType('scpi_av')" id="type-scpi_av"><span class="type-icon">🔗</span>SCPI + AV</button>
+    </div>
+
+    <div class="nav">
+      <div></div>
+      <button class="btn-primary" onclick="goStep(2)">Suivant →</button>
+    </div>
+  </div>
+
+  <!-- ── ÉTAPE 2 : Lien YouTube ── -->
+  <div class="card" id="card-2">
+    <div class="card-header">
+      <div class="card-num">2</div>
+      <div>
+        <div class="card-title">Lien de la vidéo YouTube</div>
+        <div class="card-sub">Vidéo publique ou non-listée — Gemini l'analysera directement</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>URL YouTube</label>
+      <input type="text" class="url-input" id="yt-url"
+        placeholder="https://www.youtube.com/watch?v=..."
+        oninput="handleUrlInput(this.value)">
+      <div class="hint green" style="margin-top:10px">
+        ✓ Fonctionne avec les vidéos publiques et non-listées
+      </div>
+    </div>
+
+    <div class="video-preview" id="video-preview">
+      <iframe id="yt-iframe" allowfullscreen></iframe>
+    </div>
+
+    <div class="nav">
+      <button class="btn-secondary" onclick="goStep(1)">← Retour</button>
+      <button class="btn-primary" id="btn-analyze" onclick="analyzeVideo()" disabled>
+        ✦ Analyser avec Gemini
+      </button>
+    </div>
+  </div>
+
+  <!-- ── ÉTAPE 3 : Analyse en cours ── -->
+  <div class="card" id="card-3">
+    <div class="card-header">
+      <div class="card-num">3</div>
+      <div>
+        <div class="card-title">Analyse en cours...</div>
+        <div class="card-sub">Gemini visionne la vidéo et extrait les informations clés</div>
+      </div>
+    </div>
+
+    <div class="analyzing-wrap">
+      <div class="pulse-icon">🤖</div>
+      <div class="status-text" id="status-text">Connexion à Gemini...</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ÉTAPE 4 : Validation ── -->
+  <div class="card" id="card-4">
+    <div class="card-header">
+      <div class="card-num">4</div>
+      <div>
+        <div class="card-title">Valide les résultats</div>
+        <div class="card-sub">Choisis la phrase SEO · Ajuste le chapitrage si nécessaire</div>
+      </div>
+    </div>
+
+    <!-- SEO -->
+    <div class="analysis-block">
+      <div class="analysis-label">✦ Phrase de description SEO — choisis une option</div>
+      <div class="seo-options" id="seo-options"></div>
+    </div>
+
+    <!-- Chapitres -->
+    <div class="analysis-block">
+      <div class="analysis-label">⏱ Chapitrage détecté — modifiable</div>
+      <div class="chapitres-list" id="chapitres-list"></div>
+      <button class="btn-add-chap" onclick="addChap('', '')">+ Ajouter un chapitre</button>
+    </div>
+
+    <div class="nav">
+      <button class="btn-secondary" onclick="goStep(2)">← Recommencer</button>
+      <button class="btn-primary" onclick="goStep(5)">Suivant →</button>
+    </div>
+  </div>
+
+  <!-- ── ÉTAPE 5 : UTMs ── -->
+  <div class="card" id="card-5">
+    <div class="card-header">
+      <div class="card-num">5</div>
+      <div>
+        <div class="card-title">Code vidéo pour les UTMs</div>
+        <div class="card-sub">Identifiant court pour tracker les clics dans Analytics</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Code vidéo *</label>
+      <input type="text" class="utm-input" id="video-code"
+        placeholder="Ex: top5scpi · retraite · storytime · haussmann..."
+        oninput="updateUTMPreview()">
+      <div class="hint">Génère : <code>Simul_D_[code]</code> · <code>RDV_D_[code]</code> · <code>SignUp_D_[code]</code></div>
+    </div>
+
+    <div id="utm-preview" style="display:none">
+      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">
+        Description (_D_)
+      </div>
+      <div class="utm-preview-list" id="utm-list-d"></div>
+      <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 8px">
+        Commentaire épinglé (_C_)
+      </div>
+      <div class="utm-preview-list" id="utm-list-c"></div>
+    </div>
+
+    <div class="nav">
+      <button class="btn-secondary" onclick="goStep(4)">← Retour</button>
+      <button class="btn-primary" onclick="generate()">✦ Générer la description</button>
+    </div>
+  </div>
+
+  <!-- ── OUTPUT ── -->
+  <div class="output-card" id="output-card">
+    <div class="output-header">
+      <div class="output-title">
+        Description YouTube
+        <span class="badge badge-green" id="out-type-badge"></span>
+      </div>
+      <button class="btn-copy" id="btn-copy-desc" onclick="copyEl('out-desc', 'btn-copy-desc', '📋 Copier')">
+        📋 Copier la description
+      </button>
+    </div>
+    <div class="output-text" id="out-desc"></div>
+
+    <hr class="sep">
+
+    <div class="output-header">
+      <div class="output-title" style="font-size:14px">
+        Commentaire épinglé
+        <span class="badge badge-purple">📌</span>
+      </div>
+      <button class="btn-copy purple" id="btn-copy-com" onclick="copyEl('out-comment', 'btn-copy-com', '📌 Copier le commentaire')">
+        📌 Copier le commentaire
+      </button>
+    </div>
+    <div class="output-text" id="out-comment"></div>
+
+    <div class="nav">
+      <button class="btn-secondary" onclick="goStep(5)">← Modifier</button>
+      <button class="btn-primary" onclick="resetAll()">↺ Nouvelle vidéo</button>
+    </div>
+  </div>
+
+</div>
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const DISCLAIMERS = {
+  scpi: `⚠️ Avertissement : Investir en SCPI comporte des risques, notamment de perte en capital et de liquidité. Un investissement SCPI s'envisage sur une durée longue (10 ans ou plus). Les performances passées ne préjugent pas des performances futures et les objectifs de rendement sont non garantis. Les vidéos et le contenu diffusés sur la chaîne « Louve Invest » ont pour seul objectif d'informer, d'éduquer et de sensibiliser. Les conseils et stratégies présentés ne garantissent en aucun cas un gain financier. Cette vidéo ne constitue pas un conseil en investissement. Plus d'infos : https://www.louveinvest.com/scpi/scpi-risques`,
+  av: `⚠️ Avertissement :\nInvestir en assurance-vie comporte des risques et doit s'envisager sur le long terme. Les assurances-vie sont des contrats composés de fonds euros et d'unités de compte. Les montants investis sur les supports en unités de compte supportent des risques de perte en capital. Ils ne sont pas garantis par l'assureur et sont sujets à des fluctuations à la hausse ou à la baisse dépendant en particulier de l'évolution des marchés financiers. Chaque UC comporte ses propres frais en plus des frais du contrat. Les performances passées ne préjugent pas des performances futures et les objectifs de rendement sont non garantis. Plus d'informations sur les risques : https://www.louveinvest.com/assurance-vie/risques-assurance-vie Les vidéos et le contenu diffusés sur la chaîne « Louve Invest » ont pour seul objectif d'informer, d'éduquer et de sensibiliser. Les conseils et stratégies présentés ne garantissent en aucun cas un gain financier. Cette vidéo ne constitue pas un conseil en investissement.`,
+  etf: `⚠️ Avertissement : Investir en ETF comporte des risques, notamment de perte en capital et de liquidité. Ces produits restent soumis à la volatilité des marchés financiers, dont les mouvements à la hausse comme à la baisse peuvent impacter leur valeur. Renseignez-vous avant d'investir. Les vidéos et le contenu diffusés sur la chaîne « Louve Invest » ont pour seul objectif d'informer, d'éduquer et de sensibiliser. Les conseils et stratégies présentés ne garantissent en aucun cas un gain financier. Cette vidéo ne constitue pas un conseil en investissement.`,
+  pea: `⚠️ Avertissement : Investir dans un PEA comporte des risques. Notamment de perte en capital et de liquidité. Investir s'envisage sur une durée longue (10 ans ou plus). Les performances passées ne préjugent pas des performances futures et les objectifs de rendement sont non garantis. Les supports d'investissement utilisés dans un PEA sont exposés aux risques actions, ce qui implique un niveau de volatilité élevé. Les vidéos et le contenu diffusés sur la chaîne « Louve Invest » ont pour seul objectif d'informer, d'éduquer et de sensibiliser. Les conseils et stratégies présentés ne garantissent en aucun cas un gain financier. Cette vidéo ne constitue pas un conseil en investissement.`,
+  cto: `⚠️ Avertissement :\nInvestir dans un CTO comporte des risques. Notamment de perte en capital et de liquidité. Investir s'envisage sur une durée longue (10 ans ou plus). Les performances passées ne préjugent pas des performances futures et les objectifs de rendement sont non garantis. Les supports d'investissement utilisés dans un CTO sont exposés aux risques actions, ce qui implique un niveau de volatilité élevé. Consultez les risques avant d'investir. Les vidéos et le contenu diffusés sur la chaîne « Louve Invest » ont pour seul objectif d'informer, d'éduquer et de sensibiliser. Les conseils et stratégies présentés ne garantissent en aucun cas un gain financier. Cette vidéo ne constitue pas un conseil en investissement.`,
+  scpi_av: `⚠️ Avertissement : Investir comporte des risques, notamment de perte en capital et de liquidité. Les revenus ne sont pas garantis et dépendent de l'évolution des marchés financiers, immobiliers et du cours des devises. Les performances passées ne préjugent pas des performances futures et les objectifs de rendement sont non garantis. Investir s'envisage sur le long terme. Les vidéos et le contenu diffusés sur la chaîne « Louve Invest » ont pour seul objectif d'informer, d'éduquer et de sensibiliser. Les conseils et stratégies présentés ne garantissent en aucun cas un gain financier. Cette vidéo ne constitue pas un conseil en investissement.\nPlus d'informations sur les risques en SCPI : https://www.louveinvest.com/scpi/scpi-risques et en assurance-vie : https://www.louveinvest.com/assurance-vie/risques-assurance-vie`
+};
+
+const TYPE_LABELS = { scpi:'SCPI', av:'Assurance-vie', etf:'ETF', pea:'PEA', cto:'CTO', scpi_av:'SCPI + AV' };
+const HAS_SIMUL   = ['scpi', 'scpi_av'];
+
+const BASE = {
+  simul:  'https://app.louveinvest.com/simulation',
+  rdv:    'https://meetings.hubspot.com/victor-dere/lien-de-rdv-1?__hstc=247703960.f1cccdccbed8bfccad37b3ece6c0ab38.1725284817977.1736335353943.1736347211341.191&__hssc=247703960.1.1736347211341&__hsfp=3265250034&uuid=c8c04e27-bcab-49f8-bec4-a87074ff0c77',
+  signup: 'https://app.louveinvest.com/signup',
+  forum:  'https://community.louveinvest.com/'
+};
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let S = { type: null, ytUrl: null, seoOptions: [], selectedSEO: null };
+let chapCount = 0;
+
+// ═══════════════════════════════════════
+// API KEY
+// ═══════════════════════════════════════
+function checkKey() {
+  const k = document.getElementById('gemini-key').value.trim();
+  document.getElementById('api-dot').className = 'api-dot' + (k.startsWith('AI') && k.length > 20 ? ' ok' : '');
+}
+const getKey = () => document.getElementById('gemini-key').value.trim();
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function goStep(n) {
+  if (n === 2 && !S.type) { alert('Choisis un type de vidéo.'); return; }
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('visible'));
+  document.getElementById('card-' + n).classList.add('visible');
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < n) s.classList.add('done');
+    if (i + 1 === n) s.classList.add('active');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════
+// TYPE
+// ═══════════════════════════════════════
+function selectType(t) {
+  S.type = t;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('type-' + t).classList.add('selected');
+}
+
+// ═══════════════════════════════════════
+// URL HANDLING
+// ═══════════════════════════════════════
+function extractVideoId(url) {
+  const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function handleUrlInput(val) {
+  const id = extractVideoId(val);
+  const preview = document.getElementById('video-preview');
+  const btn = document.getElementById('btn-analyze');
+
+  if (id) {
+    document.getElementById('yt-iframe').src = `https://www.youtube.com/embed/${id}`;
+    preview.classList.add('visible');
+    S.ytUrl = val.trim();
+    btn.disabled = false;
+  } else {
+    preview.classList.remove('visible');
+    S.ytUrl = null;
+    btn.disabled = true;
+  }
+}
+
+// ═══════════════════════════════════════
+// ANALYZE
+// ═══════════════════════════════════════
+async function analyzeVideo() {
+  if (!getKey()) { alert('Entre ta clé API Gemini en haut de la page.'); return; }
+  if (!S.ytUrl)  { alert('Entre un lien YouTube valide.'); return; }
+
+  goStep(3);
+  setStatus('Envoi de la requête à Gemini...', 15);
+
+  try {
+    const result = await callGemini();
+    setStatus('Analyse terminée ✓', 100);
+    parseResult(result);
+    setTimeout(() => goStep(4), 500);
+  } catch (err) {
+    console.error(err);
+    alert('Erreur Gemini : ' + err.message + '\n\nVérifie ta clé API et que la vidéo est accessible.');
+    goStep(2);
+  }
+}
+
+async function callGemini() {
+  setStatus('Gemini visionne la vidéo...', 40);
+
+  const prompt = `Tu es un expert SEO YouTube spécialisé dans l'investissement financier en France. Tu travailles pour Louve Invest, une plateforme d'investissement (SCPI, assurance-vie, ETF).
+
+Regarde attentivement cette vidéo de type "${TYPE_LABELS[S.type]}" et fournis les éléments suivants.
+
+IMPORTANT : Réponds UNIQUEMENT avec du JSON valide, sans markdown, sans backticks, sans texte avant ou après.
+
+{
+  "seo_options": [
+    "Option 1 : phrase factuelle, 120-150 caractères, mots-clés investissement, YouTube SEO",
+    "Option 2 : phrase orientée bénéfice utilisateur, 120-150 caractères",
+    "Option 3 : phrase orientée curiosité ou question, 120-150 caractères"
+  ],
+  "chapitres": [
+    {"timecode": "0:00", "titre": "Introduction"},
+    {"timecode": "X:XX", "titre": "Nom chapitre SEO-friendly"}
+  ]
+}
+
+Pour les chapitres : repère les écrans titres (texte affiché à l'écran entre les parties). Optimise les noms pour le SEO YouTube. Le premier chapitre commence TOUJOURS à 0:00 "Introduction".`;
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${getKey()}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { file_data: { mime_type: 'video/mp4', file_uri: S.ytUrl } }
+          ]
+        }],
+        generationConfig: { temperature: 0.6, maxOutputTokens: 2048 }
+      })
+    }
+  );
+
+  setStatus('Traitement de la réponse...', 75);
+
+  if (!resp.ok) {
+    const err = await resp.json();
+    throw new Error(err.error?.message || 'Erreur API Gemini');
+  }
+
+  const data = await resp.json();
+
+  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    throw new Error('Réponse vide de Gemini. La vidéo est-elle accessible ?');
+  }
+
+  return data.candidates[0].content.parts[0].text;
+}
+
+function setStatus(msg, pct) {
+  document.getElementById('status-text').textContent = msg;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+// ═══════════════════════════════════════
+// PARSE & RENDER
+// ═══════════════════════════════════════
+function parseResult(raw) {
+  let parsed;
+  try {
+    const clean = raw.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    parsed = JSON.parse(clean);
+  } catch {
+    parsed = {
+      seo_options: ['Phrase SEO — modifie manuellement', 'Phrase SEO — modifie manuellement', 'Phrase SEO — modifie manuellement'],
+      chapitres: [{ timecode: '0:00', titre: 'Introduction' }]
+    };
+  }
+
+  S.seoOptions = parsed.seo_options || [];
+
+  // Render SEO options
+  const box = document.getElementById('seo-options');
+  box.innerHTML = '';
+  S.seoOptions.forEach((opt, i) => {
+    const d = document.createElement('div');
+    d.className = 'seo-option';
+    d.id = 'seo-' + i;
+    d.onclick = () => {
+      S.selectedSEO = i;
+      document.querySelectorAll('.seo-option').forEach(el => el.classList.remove('selected'));
+      d.classList.add('selected');
+    };
+    d.innerHTML = `<div class="seo-num">Option ${i+1} · ${opt.length} caractères</div><div>${opt}</div>`;
+    box.appendChild(d);
+  });
+
+  // Render chapitres
+  const list = document.getElementById('chapitres-list');
+  list.innerHTML = '';
+  chapCount = 0;
+  (parsed.chapitres || []).forEach(c => addChap(c.timecode, c.titre));
+}
+
+// ═══════════════════════════════════════
+// CHAPITRES
+// ═══════════════════════════════════════
+function addChap(time = '', titre = '') {
+  const list = document.getElementById('chapitres-list');
+  const id = 'cr-' + (++chapCount);
+  const row = document.createElement('div');
+  row.className = 'chap-row'; row.id = id;
+  row.innerHTML = `
+    <input type="text" class="chap-time" value="${time}" placeholder="0:00">
+    <input type="text" class="chap-name" value="${titre}" placeholder="Nom du chapitre...">
+    <button class="btn-rm" onclick="document.getElementById('${id}').remove()">×</button>
+  `;
+  list.appendChild(row);
+}
+
+function getChapitres() {
+  return [...document.querySelectorAll('.chap-row')].map(r => ({
+    timecode: r.querySelector('.chap-time').value.trim(),
+    titre:    r.querySelector('.chap-name').value.trim()
+  })).filter(c => c.timecode && c.titre);
+}
+
+// ═══════════════════════════════════════
+// UTMs
+// ═══════════════════════════════════════
+function utm(base, type, pl, code) {
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}utm_source=youtube&utm_medium=social&utm_campaign=${type}_${pl}_${code}`;
+}
+
+function getLinks(pl, code) {
+  const links = [];
+  if (HAS_SIMUL.includes(S.type)) links.push({ label:'Simulateur', url: utm(BASE.simul,  'Simul',  pl, code) });
+  links.push({ label:'RDV',    url: utm(BASE.rdv,    'RDV',    pl, code) });
+  links.push({ label:'Signup', url: utm(BASE.signup, 'SignUp', pl, code) });
+  return links;
+}
+
+function updateUTMPreview() {
+  const code = document.getElementById('video-code').value.trim();
+  const wrap = document.getElementById('utm-preview');
+  if (!code) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  renderLinks('utm-list-d', getLinks('D', code));
+  renderLinks('utm-list-c', getLinks('C', code));
+}
+
+function renderLinks(id, links) {
+  document.getElementById(id).innerHTML = links.map(l =>
+    `<div class="utm-row"><span class="utm-lbl">${l.label}</span><span class="utm-url">${l.url}</span></div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════
+// GENERATE
+// ═══════════════════════════════════════
+function generate() {
+  const code = document.getElementById('video-code').value.trim();
+  if (!code)              { alert('Entre un code vidéo.'); return; }
+  if (S.selectedSEO === null) { alert('Sélectionne une phrase SEO à l\'étape 4.'); return; }
+
+  const seo     = S.seoOptions[S.selectedSEO];
+  const chaps   = getChapitres();
+  const linksD  = getLinks('D', code);
+  const linksC  = getLinks('C', code);
+  const disc    = DISCLAIMERS[S.type];
+
+  const ICONS = { Simulateur: '📊', RDV: '📅', Signup: '✅' };
+  const NAMES = {
+    Simulateur: 'Simulateur de portefeuille',
+    RDV:        'Prendre RDV avec un conseiller',
+    Signup:     'Créer votre compte Louve Invest'
+  };
+
+  // Description
+  let desc = seo + '\n\n';
+  desc += '🔗 LIENS UTILES\n─────────────────────────\n';
+  linksD.forEach(l => { desc += `${ICONS[l.label]} ${NAMES[l.label]} → ${l.url}\n`; });
+  desc += `💬 Forum Louve Invest → ${BASE.forum}\n`;
+
+  if (chaps.length) {
+    desc += '\n⏱ CHAPITRES\n─────────────────────────\n';
+    chaps.forEach(c => { desc += `${c.timecode} ${c.titre}\n`; });
+  }
+
+  desc += '\n' + disc;
+
+  // Commentaire épinglé
+  let com = '📌 LIENS DE LA VIDÉO\n\n';
+  linksC.forEach(l => { com += `${ICONS[l.label]} ${NAMES[l.label]} → ${l.url}\n`; });
+  com += `💬 Forum Louve Invest → ${BASE.forum}`;
+
+  document.getElementById('out-desc').textContent    = desc;
+  document.getElementById('out-comment').textContent = com;
+  document.getElementById('out-type-badge').textContent = TYPE_LABELS[S.type];
+
+  const card = document.getElementById('output-card');
+  card.classList.add('visible');
+
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active','done');
+    if (i < 5) s.classList.add('done');
+    if (i === 5) s.classList.add('active');
+  });
+
+  setTimeout(() => card.scrollIntoView({ behavior:'smooth', block:'start' }), 100);
+}
+
+// ═══════════════════════════════════════
+// COPY
+// ═══════════════════════════════════════
+function copyEl(elId, btnId, origLabel) {
+  navigator.clipboard.writeText(document.getElementById(elId).textContent).then(() => {
+    const btn = document.getElementById(btnId);
+    btn.textContent = '✓ Copié !';
+    setTimeout(() => { btn.innerHTML = origLabel; }, 2000);
+  });
+}
+
+// ═══════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════
+function resetAll() {
+  S = { type: null, ytUrl: null, seoOptions: [], selectedSEO: null };
+  chapCount = 0;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('yt-url').value = '';
+  document.getElementById('video-preview').classList.remove('visible');
+  document.getElementById('btn-analyze').disabled = true;
+  document.getElementById('video-code').value = '';
+  document.getElementById('utm-preview').style.display = 'none';
+  document.getElementById('output-card').classList.remove('visible');
+  document.getElementById('chapitres-list').innerHTML = '';
+  document.getElementById('seo-options').innerHTML = '';
+  goStep(1);
+}
+</script>
+</body>
+</html>
